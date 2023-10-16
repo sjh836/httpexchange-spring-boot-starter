@@ -15,6 +15,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpStatus;
+import org.springframework.javapoet.AnnotationSpec;
 import org.springframework.javapoet.JavaFile;
 import org.springframework.javapoet.MethodSpec;
 import org.springframework.javapoet.ParameterSpec;
@@ -38,11 +39,23 @@ public class ApiBaseGenerator extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+//        generateAbstractClasses(annotations, roundEnv);
+        generateInterfaces(annotations, roundEnv);
+        return true;
+    }
+
+    private void generateInterfaces(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (Element element : roundEnv.getRootElements()) {
             // TODO(Freeman): perhaps we just need to process the interfaces to enhance compile performance?
             processElement(annotations, element);
         }
-        return true;
+    }
+
+    private void generateAbstractClasses(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        for (Element element : roundEnv.getRootElements()) {
+            // TODO(Freeman): perhaps we just need to process the interfaces to enhance compile performance?
+            processElement(annotations, element);
+        }
     }
 
     private boolean isInterface(Element element) {
@@ -64,20 +77,24 @@ public class ApiBaseGenerator extends AbstractProcessor {
     }
 
     private void processAnnotations(Set<? extends TypeElement> annotations, Element element) {
-        TypeSpec.Builder classBuilder = createClassBuilder(element);
+//        TypeSpec.Builder classBuilder = createClassBuilder(element);
+        TypeSpec.Builder interfaceBuilder = createInterfaceBuilder(element);
         boolean isNeedGenerateJavaFile = hasAnnotationMatched(annotations, element);
 
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (enclosedElement.getKind() == ElementKind.METHOD) {
+//                isNeedGenerateJavaFile =
+//                        processMethodElement(annotations, classBuilder, enclosedElement) || isNeedGenerateJavaFile;
                 isNeedGenerateJavaFile =
-                        processMethodElement(annotations, classBuilder, enclosedElement) || isNeedGenerateJavaFile;
+                        processMethodElementForInterfaces(annotations, interfaceBuilder, enclosedElement) || isNeedGenerateJavaFile;
             } else if (enclosedElement.getKind() == ElementKind.INTERFACE) {
                 processElement(annotations, enclosedElement);
             }
         }
 
         if (isNeedGenerateJavaFile) {
-            generateJavaFile(element, classBuilder);
+//            generateJavaFile(element, classBuilder);
+            generateJavaFile(element, interfaceBuilder);
         }
     }
 
@@ -115,6 +132,35 @@ public class ApiBaseGenerator extends AbstractProcessor {
         return result;
     }
 
+    private TypeSpec.Builder createInterfaceBuilder(Element element) {
+        TypeSpec.Builder result = TypeSpec.interfaceBuilder(element.getSimpleName() + "BI")
+                .addSuperinterface(TypeName.get(element.asType()))
+                .addJavadoc(
+                        """
+                                Server side base implementation.
+
+                                <p>
+                                Usage:
+                                <pre>{@code
+                                @RestController
+                                public class $L implements $L {
+                                    // ...
+                                }
+                                }</pre>
+                                """,
+                        element.getSimpleName() + "Controller",
+                        element.getSimpleName() + "BI");
+        if (element.getModifiers().contains(Modifier.PUBLIC)) {
+            result.addModifiers(Modifier.PUBLIC);
+        }
+        // Copy all annotations from the original interface to the generated interface
+        for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+            AnnotationSpec annotationSpec = AnnotationSpec.get(annotationMirror);
+            result.addAnnotation(annotationSpec);
+        }
+        return result;
+    }
+
     private boolean processMethodElement(
             Set<? extends TypeElement> annotations, TypeSpec.Builder classBuilder, Element enclosedElement) {
         for (AnnotationMirror annotation : enclosedElement.getAnnotationMirrors()) {
@@ -126,6 +172,31 @@ public class ApiBaseGenerator extends AbstractProcessor {
             }
         }
         return false;
+    }
+
+    private boolean processMethodElementForInterfaces(
+            Set<? extends TypeElement> annotations, TypeSpec.Builder interfaceBuilder, Element enclosedElement) {
+        for (AnnotationMirror annotation : enclosedElement.getAnnotationMirrors()) {
+            if (!enclosedElement.getModifiers().contains(Modifier.DEFAULT)
+                && isAnnotationMatched(annotations, annotation)) {
+                MethodSpec methodSpec = buildMethodSpecForInterface((ExecutableElement) enclosedElement);
+                interfaceBuilder.addMethod(methodSpec);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private MethodSpec buildMethodSpecForInterface(ExecutableElement methodElement) {
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(methodElement.getSimpleName().toString())
+                .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
+                .returns(TypeName.get(methodElement.getReturnType()))
+                .addAnnotation(Override.class);
+
+        addParametersToMethodBuilder(methodElement, methodBuilder);
+        methodBuilder.addStatement("throw new $T($T.NOT_IMPLEMENTED)", ResponseStatusException.class, HttpStatus.class);
+
+        return methodBuilder.build();
     }
 
     private boolean isAnnotationMatched(Set<? extends TypeElement> annotations, AnnotationMirror annotation) {

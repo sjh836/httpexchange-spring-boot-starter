@@ -10,15 +10,15 @@ import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 
 @Validated
-@HttpExchange("/user")
-public interface UserApiBI extends UserApi {
+//@HttpExchange("/user")
+public interface UserApiBaseImpl extends UserApi {
 
-    @GetExchange("/{id}")
+//    @GetExchange("/{id}")
     default UserDTO getUser(@PathVariable("id") @NotBlank @Length(max = 5) String id) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
     }
 
-    @GetExchange("/byName/{name}")
+//    @GetExchange("/byName/{name}")
     default UserDTO getUserByName(@PathVariable("name") @NotBlank String name) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
     }
