@@ -3,6 +3,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation(project(":starters:httpexchange-spring-boot-starter"))
 
+    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
+    runtimeOnly("com.h2database:h2")
+
     annotationProcessor(project(":httpexchange-processor"))
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
