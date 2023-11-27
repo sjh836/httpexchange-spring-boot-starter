@@ -1,6 +1,7 @@
 package com.example.server;
 
-import com.example.api.UserDTO;
+import com.example.api.UserApi;
+import com.example.api.UserApiBase;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
@@ -12,20 +13,28 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
-public class QuickStartApp {
+@RestController
+public class QuickStartApp extends UserApiBase {
+
     public static void main(String[] args) {
         SpringApplication.run(QuickStartApp.class, args);
+    }
+
+    @Override
+    public UserApi.UserDTO getById(String id) {
+        return new UserApi.UserDTO(id, "Freeman", List.of("Coding", "Reading"));
     }
 
     @Bean
     ApplicationRunner restTemplateRunner(RestTemplateBuilder builder, @Value("${server.port}") int port) {
         RestTemplate cli = builder.build();
         return args -> {
-            UserDTO user = cli.getForObject("http://localhost:" + port + "/user/1", UserDTO.class);
+            UserDTO user = cli.getForObject("http://localhost:" + port + "/user/getById/1", UserDTO.class);
             System.out.println(user);
         };
     }
@@ -35,7 +44,7 @@ public class QuickStartApp {
         RestClient cli = builder.build();
         return args -> {
             UserDTO user = cli.get()
-                    .uri("http://localhost:" + port + "/user/1")
+                    .uri("http://localhost:" + port + "/user/getById/1")
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {});
             System.out.println(user);
