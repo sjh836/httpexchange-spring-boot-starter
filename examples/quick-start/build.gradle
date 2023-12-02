@@ -3,6 +3,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation(project(":starters:httpexchange-spring-boot-starter"))
 
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocsVersion}")
+
     annotationProcessor(project(":httpexchange-processor"))
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

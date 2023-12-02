@@ -9,3 +9,7 @@ http-exchange:
     - base-url: http://localhost:${server.port}
       clients:
         - com.example.api.*Api
+  request-mapping-support-enabled: true
+springdoc:
+  packages-to-scan:
+    - com.example
