@@ -49,12 +49,19 @@ public class ApiBaseProcessor extends AbstractProcessor {
         return true;
     }
 
-    private boolean isInterface(Element element) {
+    private static boolean isInterface(Element element) {
         return element.getKind() == ElementKind.INTERFACE;
     }
 
+    private static boolean isGenericType(Element element) {
+        if (element instanceof TypeElement te) {
+            return !te.getTypeParameters().isEmpty();
+        }
+        return false;
+    }
+
     private void processElement(Set<? extends TypeElement> annotations, Element element) {
-        if (isInterface(element)) {
+        if (isInterface(element) && !isGenericType(element)) {
             processAnnotations(annotations, element);
         } else {
             processNonInterfaceElement(annotations, element);
@@ -94,7 +101,7 @@ public class ApiBaseProcessor extends AbstractProcessor {
         return false;
     }
 
-    private TypeSpec.Builder createClassBuilder(Element element) {
+    private static TypeSpec.Builder createClassBuilder(Element element) {
         TypeSpec.Builder result = TypeSpec.classBuilder(element.getSimpleName() + GENERATED_CLASS_SUFFIX)
                 .addModifiers(Modifier.ABSTRACT)
                 .addSuperinterface(TypeName.get(element.asType()))
@@ -124,11 +131,11 @@ public class ApiBaseProcessor extends AbstractProcessor {
     }
 
     private boolean processMethodElement(
-            Set<? extends TypeElement> annotations, TypeSpec.Builder classBuilder, Element enclosedElement) {
-        for (AnnotationMirror annotation : enclosedElement.getAnnotationMirrors()) {
-            if (!enclosedElement.getModifiers().contains(Modifier.DEFAULT)
+            Set<? extends TypeElement> annotations, TypeSpec.Builder classBuilder, Element methodElement) {
+        for (AnnotationMirror annotation : methodElement.getAnnotationMirrors()) {
+            if (!methodElement.getModifiers().contains(Modifier.DEFAULT)
                     && isAnnotationMatched(annotations, annotation)) {
-                MethodSpec methodSpec = buildMethodSpec((ExecutableElement) enclosedElement);
+                MethodSpec methodSpec = buildMethodSpec((ExecutableElement) methodElement);
                 classBuilder.addMethod(methodSpec);
                 return true;
             }
@@ -155,7 +162,8 @@ public class ApiBaseProcessor extends AbstractProcessor {
         return methodBuilder.build();
     }
 
-    private void addParametersToMethodBuilder(ExecutableElement methodElement, MethodSpec.Builder methodBuilder) {
+    private static void addParametersToMethodBuilder(
+            ExecutableElement methodElement, MethodSpec.Builder methodBuilder) {
         for (VariableElement parameter : methodElement.getParameters()) {
             methodBuilder.addParameter(ParameterSpec.builder(
                             TypeName.get(parameter.asType()),

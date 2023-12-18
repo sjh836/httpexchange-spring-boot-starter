@@ -7,3 +7,11 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
+
+//tasks.withType(JavaCompile).configureEach {
+//    options.fork = true
+//    options.forkOptions.executable = 'java'
+//    options.forkOptions.jvmArgs = [
+//            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
+//    ]
+//}

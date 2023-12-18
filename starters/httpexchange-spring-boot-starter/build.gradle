@@ -6,6 +6,8 @@ dependencies {
     optionalSupportApi("org.springframework.cloud:spring-cloud-context")
 
     optionalSupportApi("org.springframework.cloud:spring-cloud-starter-loadbalancer")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 apply from: "${rootDir}/gradle/deploy.gradle"
